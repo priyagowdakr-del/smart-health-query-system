@@ -1,3 +1,4 @@
+# Dependencies for Smart Health Query System
 pymupdf
 sentence-transformers
 faiss-cpu
