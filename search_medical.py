@@ -3,7 +3,7 @@ import numpy as np
 
 from vector_store import get_embedding_model
 
-
+#search for the most relevant passages in the document based on the question using FAISS and sentence-transformers
 def search_medical(index, chunks, question, top_k=5):
     if not question.strip() or index.ntotal == 0:
         return []

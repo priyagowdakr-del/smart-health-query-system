@@ -4,7 +4,7 @@ import fitz
 MAX_PDF_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_PDF_PAGES = 500
 
-#exracts readable text and page numbers from PDF bytes and raises errors for invalid or unsupported PDFs
+#extracts readable text and page numbers from PDF bytes and raises errors for invalid or unsupported PDFs
 def extract_pdf_text(pdf_bytes: bytes):
     """Extract readable text and page numbers from PDF bytes."""
 

@@ -6,13 +6,13 @@ import uuid
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
 from pdf_reader import extract_pdf_text, MAX_PDF_SIZE
 from medical_validator import validate_medical_document
 from vector_store import create_chunks, create_document_index
 from search_medical import search_medical
 from answer_generator import generate_answer
 
+#recieves the request and ciordinates the processing steps
 app = FastAPI(title="MediLens Medical Document API")
 
 # Temporary, process-local memory only.

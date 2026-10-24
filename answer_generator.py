@@ -6,6 +6,7 @@ from groq import Groq
 
 load_dotenv()
 
+#sends the question and relevant passeges to the groq language model to generate an answer
 MODEL_NAME = os.getenv(
     "GROQ_MODEL",
     "openai/gpt-oss-20b",
