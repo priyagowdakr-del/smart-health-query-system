@@ -1,19 +1,7 @@
-# Secrets
 .env
 .env.*
-
-# Python environment and cache
-.venv/
+!.env.example
 venv/
+.venv/
 __pycache__/
 *.py[cod]
-
-# Generated vector data
-medical_index.faiss
-medical_chunks.pkl
-
-# Editor and OS files
-.vscode/
-.DS_Store
-Thumbs.db
-MedicalGuide.pdf

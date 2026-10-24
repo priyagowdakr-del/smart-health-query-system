@@ -3,122 +3,85 @@ import os
 
 from dotenv import load_dotenv
 from groq import Groq
-from search_medical import search_medical
 
-
-# 1. Load environment variables from .env
 load_dotenv()
+
+MODEL_NAME = os.getenv(
+    "GROQ_MODEL",
+    "openai/gpt-oss-20b",
+)
 
 api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    raise ValueError(
-        "GROQ_API_KEY not found. Check your .env file."
+    raise RuntimeError(
+        "GROQ_API_KEY is missing from your .env file."
     )
 
-
-# 2. Create the Groq client
 client = Groq(api_key=api_key)
 
-MODEL_NAME = "openai/gpt-oss-20b"
 
-
-# 3. Generate an answer using retrieved PDF evidence
-def generate_answer(question):
-
-    # Retrieve the closest passage from the PDF
-    results = search_medical(question, top_k=1)
-
-    if not results:
+def generate_answer(question, passages):
+    if not passages:
         return {
             "answer": (
-                "The provided document does not contain "
-                "sufficient information to answer this question."
+                "I could not find a sufficiently relevant passage "
+                "in this document to answer the question."
             ),
-            "page": None
+            "usage": None,
         }
 
-    result = results[0]
+    context = "\n\n".join(
+        f"PDF page {item['page']}:\n{item['text']}"
+        for item in passages
+    )
 
-    # Avoid generating an answer from a weak match
-    if result["similarity"] < 0.40:
-        return {
-            "answer": (
-                "The provided document does not contain "
-                "sufficient information to answer this question."
-            ),
-            "page": None
-     }
-
-    context = result["text"]
-    page_number = result["page"]
-
-    # Ask the LLM to answer using only the retrieved passage
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "You answer questions using only the "
-                    "provided medical document passage. "
-                    "Do not use outside knowledge or invent "
-                    "facts. If the passage does not contain "
-                    "enough information, say that the provided "
-                    "document does not contain sufficient "
-                    "information to answer the question. "
-                    "Provide educational information only, "
-                    "not a diagnosis or personalized treatment."
-                )
+                    "You answer questions about an uploaded medical "
+                    "document for educational purposes. Use only the "
+                    "supplied passages for document-specific claims. "
+                    "Do not invent test results, diagnoses, or sources. "
+                    "If the passages do not answer the question, say so. "
+                    "Explain medical terms clearly, distinguish general "
+                    "information from personal medical advice, and "
+                    "recommend a qualified healthcare professional for "
+                    "personal medical decisions. Never claim to diagnose."
+                ),
             },
             {
                 "role": "user",
                 "content": (
                     f"Question: {question}\n\n"
-                    f"Document passage:\n{context}\n\n"
-                    "Give one clear, concise answer based "
-                    "only on this passage."
-                )
-            }
+                    f"Retrieved document passages:\n{context}"
+                ),
+            },
         ],
         temperature=0.2,
-        max_completion_tokens=300
+        max_completion_tokens=400,
     )
 
-    answer = response.choices[0].message.content
+    usage_data = getattr(response, "usage", None)
+
+    usage = None
+    if usage_data is not None:
+        usage = {
+            "prompt_tokens": getattr(
+                usage_data, "prompt_tokens", None
+            ),
+            "completion_tokens": getattr(
+                usage_data, "completion_tokens", None
+            ),
+            "total_tokens": getattr(
+                usage_data, "total_tokens", None
+            ),
+        }
 
     return {
-        "answer": answer,
-        "page": page_number
+        "answer": response.choices[0].message.content or "",
+        "usage": usage,
     }
-
-
-# 4. Test the answer generator
-if __name__ == "__main__":
-
-    print("\nSmart Patient Health Query System")
-    print("Type 'exit' to stop.")
-
-    while True:
-        question = input("\nAsk a question: ").strip()
-
-        if question.lower() == "exit":
-            print("Program stopped.")
-            break
-
-        if not question:
-            print("Please enter a question.")
-            continue
-
-        try:
-            result = generate_answer(question)
-
-            print("\nAnswer:")
-            print(result["answer"])
-
-            if result["page"] is not None:
-                print(f"\nSource: MedicalGuide.pdf, page "
-                      f"{result['page']}")
-
-        except Exception as error:
-            print(f"An error occurred: {error}")
